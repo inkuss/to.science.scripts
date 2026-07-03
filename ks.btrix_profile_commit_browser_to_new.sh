@@ -1,6 +1,7 @@
 #!/bin/bash
-# Shell-Skript, dass Crawler-Config aus Browsertrix holt
-# KS 24.09.2025
+# Shell-Skript, das ein Browser-Profile "Create Browser to New"
+# Das legt ein Browser-Profil für einen laufenden Browser an.
+# KS 15.06.2026
 source funktionen.sh
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"                                                           cd $scriptdir
 source variables.conf
@@ -12,7 +13,11 @@ TOKEN=`echo $httpResponse | jq '.access_token'`
 TOKEN=$(stripOffQuotes $TOKEN)
 #echo "TOKEN=$TOKEN"
 
-# Get Crawl Id from command line
-cid=$1
-# Get Crawl Config Out
-curl -XGET -H "Authorization: Bearer $TOKEN" -H "Accept: application/json" "http://$BTRIX_API_URL/orgs/$BTRIX_ORGID/crawlconfigs/$cid"
+# Create Browser to New
+#browserid="prf-2933b7fd27"
+browserid=$1
+name="Test-Profile"
+description=""
+#tags="[\"edoweb\"]"
+tags=""
+curl -XPOST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json; Accept: application/json" -d'{"browserid":"'$browserid'","name":"'$name'","description":"'$description'","tags":['$tags']}' "http://$BTRIX_API_URL/orgs/$BTRIX_ORGID/profiles"

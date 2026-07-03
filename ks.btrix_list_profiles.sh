@@ -1,6 +1,6 @@
 #!/bin/bash
-# Shell-Skript, dass Crawler-Config aus Browsertrix holt
-# KS 24.09.2025
+# Shell-Skript, das Browser-Profile in Browsertrix auflistet.
+# KS 15.06.2026
 source funktionen.sh
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"                                                           cd $scriptdir
 source variables.conf
@@ -12,7 +12,6 @@ TOKEN=`echo $httpResponse | jq '.access_token'`
 TOKEN=$(stripOffQuotes $TOKEN)
 #echo "TOKEN=$TOKEN"
 
-# Get Crawl Id from command line
-cid=$1
-# Get Crawl Config Out
-curl -XGET -H "Authorization: Bearer $TOKEN" -H "Accept: application/json" "http://$BTRIX_API_URL/orgs/$BTRIX_ORGID/crawlconfigs/$cid"
+# List Crawls
+# alle Crawls auflisten
+curl -XGET -H "Authorization: Bearer $TOKEN" -H "Accept: application/json" "http://$BTRIX_API_URL/orgs/$BTRIX_ORGID/profiles"
