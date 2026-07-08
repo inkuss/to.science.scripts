@@ -57,7 +57,7 @@ Gatherconf=""
 if [ $# -gt 5 ]; then
   Gatherconf=$6
 else
-  Gatherconf="{\"name\":\"$pid\"}"
+  Gatherconf="{\"name\":\"$NAMESPACE:$pid\"}"
 fi
 
 
@@ -74,8 +74,8 @@ fi
 url_encoded=$(urlencode $url)
 title_encoded=$(urlencode "$title")
 intervall_encoded=$(urlencode "$intervall")
-echo "curl $curlopts -XPOST -d $Gatherconf \"$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains\""
-resultat=`curl $curlopts -u$ADMIN_USER:$PASSWORD -H"content-type:application/json; charset=utf-8" -XPOST -d '$Gatherconf'  "$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains"`
+echo "curl $curlopts -XPOST -d \"$Gatherconf\" \"$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains\""
+resultat=`curl $curlopts -u$ADMIN_USER:$PASSWORD -H "Content-type:application/json; charset=utf-8; Accept: application/json" -XPOST -d "$Gatherconf" "$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains"`
 echo $resultat
 id=`echo $resultat | jq ".[\"@id\"]"`
 id=$(stripOffQuotes "$id")
