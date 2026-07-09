@@ -180,7 +180,7 @@ while read zeile; do
 	Gatherconf="{\"name\":\"$NAMESPACE:$pid\",\"active\":false,\"robotsPolicy\":\"ignore\",\"maxCrawlSize\":0,\"urlsExcluded\":[\"(?i)(.(avi|wmv|mpe?g|mp3|mp4|mov|webm))$\",\"(?i)(suche|kalender|terminplaner).*$\"]"
 	if [ "$crawler" = "heritrix" ]; then
 		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"LAV_Heritrix\",\"deepness\":12,\"waitSecBtRequests\":3,\"waitRetry\":120,\"tries\":10}"
-	elif [ "$crawler" = "browsertrix" ]; then
+	elif [ "$crawler" = "btrix" ]; then
 		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"LAV_Browsertrix\",\"deepness\":-1\"waitSecBtRequests\":0,\"waitRetry\":120}"
 	elif [ "$crawler" = "wget" ]; then
 		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"Wget\",\"deepness\":12,\"waitSecBtRequests\":4}"
