@@ -17,9 +17,9 @@
 #                          4.000 - 14.000   Webpages des LAV (werden durch dieses Skript angelegt)
 #                         20.967 -          Webschnitte und Webpages der LBs und des LAV (seit 26.01.2026, 18:15 Uhr; z.Zt. bis 21.695)
 set -o nounset
-source funktionen.sh
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $scriptdir
+source funktionen.sh
 source variables.conf
 
 usage() {
@@ -100,9 +100,9 @@ if [ $verbose == 1 ]; then
   curlopts="$curlopts -v"
 fi
 
-
-echo "BACKEND=$BACKEND"
+echo "BEGINN Skript $0."
 echo "Lege LAV-Webpages und -Webschnitte an anhand von Datei: $csv_datei"
+echo "BACKEND=$BACKEND"
 if [ -n "$beginnPid" ]; then
   echo "erste Pid: $beginnPid"
 fi
@@ -251,17 +251,28 @@ while read zeile; do
 	
 	# Die Archvidateien in ein Verzeichnis ~/lav-data/$NAMESPACE:$pid/$zeitstempel verschieben (auf einer mit Wayback geteilten Platte)
 	crawlverz=$ARCHIVE_HOME/lav-data/$NAMESPACE:$pid/$zeitstempel
-	mkdir -p $crawlverz
-	printf "INFO: Crawlverzeichnis %s angelegt.\n" $crawlverz
+	if mkdir -p $crawlverz; then
+		printf "INFO: Crawlverzeichnis %s angelegt.\n" $crawlverz
+	else
+		printf "ERROR: Crawlverzeichnis %s konnte nicht angelegt werden!\n" $crawlverz
+		nextLine
+		continue
+	fi
 	for archivdatei in *.warc.gz *.warc; do
 		if [ ! -e "$archivdatei" ]; then continue; fi
-		mv $archivdatei $crawlverz
-		printf "INFO: Archivdatei %s in das Crawlverzeichnis %s verschoben.\n" $archivdatei $crawlverz
+		if mv $archivdatei $crawlverz; then
+			printf "INFO: Archivdatei %s in das Crawlverzeichnis %s verschoben.\n" $archivdatei $crawlverz
+		else
+			printf "ERROR: Archivdatei %s konnte nicht in das Crawlverzeichnis %s verschoben werden!\n" $archivdatei $crawlverz
+		fi
 	done
 	# Das Ursprungsverzeichnis löschen (es sollte leer sein)
 	cd ..
-	rmdir $Verzeichnis
-	printf "INFO: Ursprungsverzeichnis /sftp/lav/%s wurde gelöscht.\n" $Verzeichnis
+	if rmdir $Verzeichnis; then
+		printf "INFO: Ursprungsverzeichnis /sftp/lav/%s wurde gelöscht.\n" $Verzeichnis
+	else
+		printf "ERROR: Ursprungsverzeichnis /sftp/lav/%s konnte nicht gelöscht werden!\n" $Verzeichnis
+	fi
 	
 	
 	# Und einen Webschnitt für dieses Crawl-Verzeichnis anlegen.
@@ -269,12 +280,20 @@ while read zeile; do
 	json_body="{\"pid\":\"$NAMESPACE:$pid\",\"crawldir\":\"$zeitstempel\",\"warcFilenameBase\":\"$warcFilenameBase\"}"
 	echo "curl $curlopts -XPOST -H \"Content-Type: application/json; charset=utf-8; Accept: application/json\" -d \"$json_body\" \"$BACKEND/webhooks/lavCrawlIngest\""
 	resultat=`curl $curlopts -XPOST -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: application/json; charset=utf-8; Accept: application/json" -d "$json_body" "$BACKEND/webhooks/lavCrawlIngest"`
-	# auch das hat funktioniert; ToDo: hier noch von dem Endpoint ein Resultat zurück geben lassen (im Format JSON), welches die erzeugte WS-PID enthält. Die PID aus dem Resultat ausparsen und hier ausgeben.
 	echo $resultat
+	id=`echo $resultat | jq ".[\"@id\"]"`
+	if [ -z "${id:-}" ]; then
+		echo "ERROR: Fehler beim Anlegen des Webschnittes für pid $pid!"
+		cd $olddir
+		if [ -n "$pid" ]; then
+			pid=$(($pid+1))
+		fi
+		continue
+	fi
+	id=$(stripOffQuotes "$id")
 	echo
-	printf "INFO: Ein Webschnitt zur pid %s, crawldir %s wurde angelegt.\n" $NAMESPACE:$pid $zeitstempel
+	printf "INFO: Ein Webschnitt zur pid %s, crawldir %s wurde mit PID %s angelegt.\n" $NAMESPACE:$pid $zeitstempel $id
 
-	
 	cd $olddir
 	if [ -n "$pid" ]; then
 		pid=$(($pid+1))
@@ -284,5 +303,6 @@ while read zeile; do
 done < $csv_datei.UTF-8
 echo
 echo "Script $0 terminating regularly."
+echo
 
 exit 0
