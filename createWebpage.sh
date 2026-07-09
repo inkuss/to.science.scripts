@@ -78,6 +78,10 @@ echo "curl $curlopts -XPOST -d \"$Gatherconf\" \"$BACKEND/resource/$NAMESPACE/cr
 resultat=`curl $curlopts -u$ADMIN_USER:$PASSWORD -H "Content-type:application/json; charset=utf-8; Accept: application/json" -XPOST -d "$Gatherconf" "$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains"`
 echo $resultat
 id=`echo $resultat | jq ".[\"@id\"]"`
+if [ -z "${id:-}" ]; then
+  echo "ERROR: Fehler beim Anlegen der Webpage für pid $pid!"
+  exit 1
+fi
 id=$(stripOffQuotes "$id")
 echo
 echo "Webpage mit pid erzeugt: $id"

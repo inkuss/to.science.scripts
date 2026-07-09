@@ -51,7 +51,6 @@ function nextLine {
 	if [ -n "$pid" ]; then
 		pid=$(($pid+1))
 	fi
-	continue
 }
 
 # Default-Werte
@@ -178,8 +177,7 @@ while read zeile; do
 
 
 	# Jetzt eine Webpage anlegen
-	# Gatherconf="{\"name\\:\"$NAMESPACE:$pid\",\"active\":false,\"robotsPolicy\":\"ignore\",\"maxCrawlSize\":0,\"urlsExcluded\":[\"(?i)(\.(avi|wmv|mpe?g|mp3|mp4|mov|webm))$\",\"(?i)(suche|kalender|terminplaner).*$\"]"  # hier hakt noch was bei den urlsExcluded
-	Gatherconf="{\"name\":\"$NAMESPACE:$pid\",\"active\":false,\"robotsPolicy\":\"ignore\",\"maxCrawlSize\":0"
+	Gatherconf="{\"name\":\"$NAMESPACE:$pid\",\"active\":false,\"robotsPolicy\":\"ignore\",\"maxCrawlSize\":0,\"urlsExcluded\":[\"(?i)(.(avi|wmv|mpe?g|mp3|mp4|mov|webm))$\",\"(?i)(suche|kalender|terminplaner).*$\"]"
 	if [ "$crawler" = "heritrix" ]; then
 		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"LAV_Heritrix\",\"deepness\":12,\"waitSecBtRequests\":3,\"waitRetry\":120,\"tries\":10}"
 	elif [ "$crawler" = "browsertrix" ]; then
@@ -191,7 +189,14 @@ while read zeile; do
 	fi
 	printf "INFO: Creating a Webpage für Verzeichnis %s\n" $Verzeichnis
 	printf "INFO: Using Gatherconf %s\n" $Gatherconf
-	./createWebpage.sh $curlopts "$Titel" "$URL" "$Intervall" "$pid" "$crawlSubdomains" "$Gatherconf"
+	retcode=`./createWebpage.sh $curlopts "$Titel" "$URL" "$Intervall" "$pid" "$crawlSubdomains" "$Gatherconf"`
+	echo $retcode
+	olddir=$PWD
+	if [[ "$retcode" =~  ^.*ERROR.*$ ]]; then
+		printf "ERROR: Webpage zum Titel \"%s\", URL \"%s\", pid %s konnte nicht  angelegt werden!\n" "$Titel" $URL $NAMESPACE:$pid
+		nextLine
+		continue
+	fi
 	printf "INFO: Eine Webpage zum Titel \"%s\", URL \"%s\", pid %s wurde angelegt.\n" "$Titel" $URL $NAMESPACE:$pid
 	echo
 
@@ -205,11 +210,11 @@ while read zeile; do
 		# Crawl-Datum der Excel-Datei entnehmen
 		zeitstempel=`date '+%Y%m%d%H%M%S' -d "$warcDate"` # Datumszeitstempel in lokaler Zeit
 	fi
-	olddir=$PWD
 	lieferverzeichnis="/sftp/lav/$Verzeichnis"
 	if [ ! -d "$lieferverzeichnis" ]; then
 		printf "ERROR: Lieferverzeichnis %s nicht gefunden!\n" $lieferverzeichnis
 		nextLine
+		continue
 	fi
 	cd /sftp/lav/$Verzeichnis
 	for archivdatei in *.warc.gz; do
@@ -233,10 +238,12 @@ while read zeile; do
 	if [ -z "${zeitstempel:-}" ]; then
 		printf "ERROR: Zeitstempel für den Crawl im Verzeichnis %s kann nicht ermittelt werden!\n" $Verzeichnis
 		nextLine
+		continue
 	fi
 	if [ -z "${warcFilename:-}" ] || [ ! -e "$warcFilename" ]; then
 		printf "ERROR: Archivdatei für den Crawl im Verzeichnis %s kann nicht ermittelt werden!\n" $Verzeichnis
 		nextLine
+		continue
 	fi
 	printf "INFO: Zeitstempel %s (lokaler Zeit) für diesen Crawl ermittelt.\n" $zeitstempel
 	printf "INFO: Archivdatei %s für diesen Crawl ermittelt (es kann noch weitere geben).\n" $warcFilename
@@ -275,5 +282,7 @@ while read zeile; do
 	echo
 	
 done < $csv_datei.UTF-8
+echo
+echo "Script $0 terminating regularly."
 
 exit 0
