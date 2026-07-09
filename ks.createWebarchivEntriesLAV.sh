@@ -181,7 +181,7 @@ while read zeile; do
 	if [ "$crawler" = "heritrix" ]; then
 		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"LAV_Heritrix\",\"deepness\":12,\"waitSecBtRequests\":3,\"waitRetry\":120,\"tries\":10}"
 	elif [ "$crawler" = "btrix" ]; then
-		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"LAV_Browsertrix\",\"deepness\":-1\"waitSecBtRequests\":0,\"waitRetry\":120}"
+		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"LAV_Browsertrix\",\"deepness\":-1,\"waitSecBtRequests\":0,\"waitRetry\":120}"
 	elif [ "$crawler" = "wget" ]; then
 		Gatherconf=$Gatherconf",\"crawlerSelection\":\"$crawler\",\"agentIdSelection\":\"Wget\",\"deepness\":12,\"waitSecBtRequests\":4}"
 	else
