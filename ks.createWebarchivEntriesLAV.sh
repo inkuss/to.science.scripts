@@ -221,7 +221,7 @@ while read zeile; do
 		if [ ! -e "$archivdatei" ]; then break; fi
 		if [[ "$archivdatei" =~ ^WEB-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})[0-9]{3}-00000-.*\.warc\.gz$ ]] \
 		|| [[ "$archivdatei" =~ ^.*([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})[0-9]{3}-00000\.warc\.gz$ ]] \
-		|| [[ "$archivdatei" =~ ^.*manual-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})-[0-9a-f]{8}-[0-9a-f]{3}-[0-9]{17}-0\.warc\.gz$ ]]; then
+		|| [[ "$archivdatei" =~ ^.*-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})-[0-9a-f]{8}-[0-9a-f]{3}-[0-9]{17}-0\.warc\.gz$ ]]; then
 			# Heritrix: Datumsstempel variiert => den kleinsten nehmen (Startdatum); das ist der von der Datei "-00000"; z.B. "WEB-20250225153259290-00000-61314~thinkcentre~8443.warc.gz" oder "tieraerztekammer-nordrhein-de-20250904111305942-00000.warc.gz"
 			# Browsertrix: das 1. Datum zählt; z.B. "my-organization-zfu-de-manual-20251215115117-47f2ea43-240-20251215115125472-1.warc.gz"
 			warcDate=`printf "%s-%s-%sT%s:%s:%sZ" ${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[4]} ${BASH_REMATCH[5]} ${BASH_REMATCH[6]}` # Zeit in UTC
