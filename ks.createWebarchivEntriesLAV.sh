@@ -19,8 +19,8 @@
 set -o nounset
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $scriptdir
-source funktionen.sh
 source variables.conf
+source funktionen.sh
 
 usage() {
   cat <<EOF
@@ -216,7 +216,7 @@ while read zeile; do
 		nextLine
 		continue
 	fi
-	cd /sftp/lav/$Verzeichnis
+	cd $lieferverzeichnis
 	for archivdatei in *.warc.gz; do
 		if [ ! -e "$archivdatei" ]; then break; fi
 		if [[ "$archivdatei" =~ ^WEB-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})[0-9]{3}-00000-.*\.warc\.gz$ ]] \
@@ -260,6 +260,10 @@ while read zeile; do
 	fi
 	for archivdatei in *.warc.gz *.warc; do
 		if [ ! -e "$archivdatei" ]; then continue; fi
+		if [[ "$archivdatei" =~ ^.*\.warc\.gz$ ]]; then
+			printf "INFO: Checking Rekompression Archivdatei $archivdatei.\n"
+			warcio_chk_recompress $lieferverzeichnis $archivdatei
+		fi
 		if mv $archivdatei $crawlverz; then
 			printf "INFO: Archivdatei %s in das Crawlverzeichnis %s verschoben.\n" $archivdatei $crawlverz
 		else
