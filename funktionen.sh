@@ -168,6 +168,7 @@ function warcio_chk_recompress {
   local olddir=$PWD
   cd $lieferverzeichnis
   if ! $PYTHON_HOME/bin/warcio check $archivdatei >> /dev/null; then
+    printf "INFO: Rekomprimiere Archivdatei $archivdatei.\n"
     $PYTHON_HOME/bin/warcio recompress $archivdatei "recompressed-$archivdatei"
     mv "recompressed-$archivdatei" $archivdatei 
   fi

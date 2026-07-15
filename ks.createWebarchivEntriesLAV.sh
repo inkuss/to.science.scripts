@@ -279,14 +279,14 @@ while read zeile; do
 	fi
 	
 	
-	# Und einen Webschnitt für dieses Crawl-Verzeichnis anlegen.
+	# Und jetzt einen Webschnitt für dieses Crawl-Verzeichnis anlegen.
 	warcFilenameBase=`echo $warcFilename | sed 's/\.warc\.gz$//'`
-	json_body="{\"pid\":\"$NAMESPACE:$pid\",\"crawldir\":\"$zeitstempel\",\"warcFilenameBase\":\"$warcFilenameBase\"}"
-	echo "curl $curlopts -XPOST -H \"Content-Type: application/json; charset=utf-8; Accept: application/json\" -d \"$json_body\" \"$BACKEND/webhooks/lavCrawlIngest\""
-	resultat=`curl $curlopts -XPOST -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: application/json; charset=utf-8; Accept: application/json" -d "$json_body" "$BACKEND/webhooks/lavCrawlIngest"`
+	json_body="{\"pid\":\"$NAMESPACE:$pid\",\"collection\":\"lav\",\"crawldir\":\"$zeitstempel\",\"warcFilenameBase\":\"$warcFilenameBase\"}"
+	echo "curl $curlopts -XPOST -H \"Content-Type: application/json; charset=utf-8; Accept: application/json\" -d \"$json_body\" \"$BACKEND/webhooks/externalCrawlIngest\""
+	resultat=`curl $curlopts -XPOST -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: application/json; charset=utf-8; Accept: application/json" -d "$json_body" "$BACKEND/webhooks/externalCrawlIngest"`
 	echo $resultat
 	id=`echo $resultat | jq ".[\"@id\"]"`
-	if [ -z "${id:-}" ]; then
+	if [ -z "${id:-}" ] || [ "$id" = "null" ]; then
 		echo "ERROR: Fehler beim Anlegen des Webschnittes für pid $pid!"
 		cd $olddir
 		if [ -n "$pid" ]; then
