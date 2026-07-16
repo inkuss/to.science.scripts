@@ -174,3 +174,33 @@ function warcio_chk_recompress {
   fi
   cd $olddir
 }
+
+function ermittleErsteUserIdVonKennzeichen {
+  local kennzeichen=$1
+  local userId=""
+  OLDIFS=$IFS
+  IFS="."
+  read -ra array <<< "$USERIDS"
+  for PROVIDER_USERS in "${array[@]}"
+  do
+    KENNZEICH=`echo $PROVIDER_USERS | sed 's/^\([^\:]*\):\(.*\)$/\1/'`
+    USERLISTE=`echo   $PROVIDER_USERS | sed 's/^\([^\:]*\):\(.*\)$/\2/'`
+    if [ "$KENNZEICH" != "$kennzeichen" ]; then
+      continue
+    fi
+    # Parse Userliste
+    IFS=","
+    read -ra array <<< "$USERLISTE"
+    for USERID in "${array[@]}"
+    do
+      userId=$USERID
+      break
+    done
+    if [ "$userId" != "" ]; then
+      break
+    fi
+    IFS="."
+  done
+  IFS=$OLDIFS
+  echo $userId;
+}
