@@ -50,12 +50,13 @@ shift $((OPTIND-1))
 [ "${1:-}" = "--" ] && shift
 title=$1
 url=$2
-intervall=$3
-pid=$4
-crawlSubdomains=$5
+createdBy=$3
+intervall=$4
+pid=$5
+crawlSubdomains=$6
 Gatherconf=""
-if [ $# -gt 5 ]; then
-  Gatherconf=$6
+if [ $# -gt 6 ]; then
+  Gatherconf=$7
 else
   Gatherconf="{\"name\":\"$NAMESPACE:$pid\"}"
 fi
@@ -74,8 +75,8 @@ fi
 url_encoded=$(urlencode $url)
 title_encoded=$(urlencode "$title")
 intervall_encoded=$(urlencode "$intervall")
-echo "curl $curlopts -XPOST -d \"$Gatherconf\" \"$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains\""
-resultat=`curl $curlopts -u$ADMIN_USER:$PASSWORD -H "Content-type:application/json; charset=utf-8; Accept: application/json" -XPOST -d "$Gatherconf" "$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains"`
+echo "curl $curlopts -XPOST -d \"$Gatherconf\" \"$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&createdBy=$createdBy&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains\""
+resultat=`curl $curlopts -u$ADMIN_USER:$PASSWORD -H "Content-type:application/json; charset=utf-8; Accept: application/json" -XPOST -d "$Gatherconf" "$BACKEND/resource/$NAMESPACE/createWebpage?url=$url_encoded&title=$title_encoded&createdBy=$createdBy&interval=$intervall_encoded&pid=$pid&crawlSubdomains=$crawlSubdomains"`
 echo $resultat
 id=`echo $resultat | jq ".[\"@id\"]"`
 if [ -z "${id:-}" ]; then
