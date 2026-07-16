@@ -210,9 +210,9 @@ while read zeile; do
 	cat > "$REGAL_TMP/$NAMESPACE:$pid.json" <<ENDE
 {"rdftype":[{"prefLabel":"Archivierte Webseite","@id":"http://purl.org/lobid/lv#ArchivedWebPage"}],"@id":"$NAMESPACE:$pid","id":"$BACKEND/resource/$NAMESPACE:$pid","title":["$Titel"],"isDescribedBy":{"createdBy":"$userId"}}
 ENDE
-	echo "curl $curlopts --form \"data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata\""
-	resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata"`
-	echo $resultat
+	# echo "curl $curlopts --form \"data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata\""
+	# resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata"`
+	# echo $resultat
 	# => im Datenstrom toscience ist es O.K., aber im Datenstrom metadata2 steht "ReserachData". Leider wird letzteres auch auf der UI angezeigt.
 
 	# mit diesem Endpoint erhalte ich nur "404":
