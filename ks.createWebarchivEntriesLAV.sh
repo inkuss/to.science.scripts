@@ -189,7 +189,9 @@ while read zeile; do
 	fi
 	printf "INFO: Creating a Webpage für Verzeichnis %s\n" $Verzeichnis
 	printf "INFO: Using Gatherconf %s\n" $Gatherconf
-	retcode=`./createWebpage.sh $curlopts "$Titel" "$URL" "$Intervall" "$pid" "$crawlSubdomains" "$Gatherconf"`
+	# createdBy gelangt nach RELS-EXT
+	createdBy="lav-nrw"
+	retcode=`./createWebpage.sh $curlopts "$Titel" "$URL" "$createdBy" "$Intervall" "$pid" "$crawlSubdomains" "$Gatherconf"`
 	echo $retcode
 	olddir=$PWD
 	if [[ "$retcode" =~  ^.*ERROR.*$ ]]; then
@@ -198,6 +200,28 @@ while read zeile; do
 		continue
 	fi
 	printf "INFO: Eine Webpage zum Titel \"%s\", URL \"%s\", pid %s wurde angelegt.\n" "$Titel" $URL $NAMESPACE:$pid
+
+	# Jetzt noch einen PUT/PATCH auf die Webpage hinterher schicken, damit die Webpage auch wirklich eine Webpage wird:
+	# (PUT metadata)
+	#  Lade Metadaten im Format toscience.json zu dem Objekt hoch
+	# UserId für LAV holen / das ist der User namens "lav-nrw"
+	# die userId gelangt in den toscience-Datenstrom
+	userId=$(ermittleErsteUserIdVonKennzeichen "LAV")
+	cat > "$REGAL_TMP/$NAMESPACE:$pid.json" <<ENDE
+{"rdftype":[{"prefLabel":"Archivierte Webseite","@id":"http://purl.org/lobid/lv#ArchivedWebPage"}],"@id":"$NAMESPACE:$pid","id":"$BACKEND/resource/$NAMESPACE:$pid","title":["$Titel"],"isDescribedBy":{"createdBy":"$userId"}}
+ENDE
+	echo "curl $curlopts --form \"data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata\""
+	resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata"`
+	echo $resultat
+	# => im Datenstrom toscience ist es O.K., aber im Datenstrom metadata2 steht "ReserachData". Leider wird letzteres auch auf der UI angezeigt.
+
+	# mit diesem Endpoint erhalte ich nur "404":
+	# text_body="<$NAMESPACE:$pid> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/lobid/lv#ArchivedWebPage> .
+# <$NAMESPACE:$pid> <http://purl.org/dc/terms/title> "$Titel" .
+# "
+	# echo "curl $curlopts -XPUT -H \"Content-Type: text/plain; charset=utf-8; Accept: application/json\" --data-binary \"$text_body\" \"$BACKEND/resource/$NAMESPACE:$pid/metadata\""
+	# resultat=`curl $curlopts -XPUT -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: text/plain; charset=utf-8; Accept: application/json" --data-binary "$text_body" "$BACKEND/resource/$NAMESPACE:$pid/metadata"`
+	# echo $resultat
 	echo
 
 	
@@ -297,6 +321,17 @@ while read zeile; do
 	id=$(stripOffQuotes "$id")
 	echo
 	printf "INFO: Ein Webschnitt zur pid %s, crawldir %s wurde mit PID %s angelegt.\n" $NAMESPACE:$pid $zeitstempel $id
+
+	# Jetzt noch einen PUT/PATCH auf die WebsiteVersion hinterher schicken, damit sie auch wirklich eine WebsiteVersion wird:
+	# (PUT metadata)
+	#  Lade Metadaten im Format toscience.json zu dem Objekt hoch
+	#  ---> hier ist das rdf für Webschnitte noch unbekannt
+	# cat > "$REGAL_TMP/$id.json" <<ENDE
+# {"rdftype":[{"prefLabel":"Archivierte Webseite","@id":"http://purl.org/lobid/lv#ArchivedWebPage"}],"@id":"$id","id":"$BACKEND/resource/$id","title":["$Titel"],"isDescribedBy":{"createdBy":"$userId"}}
+# ENDE
+	# echo "curl $curlopts --form \"data=@$REGAL_TMP/$id.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$id/uploadUpdateMetadata\""
+	# resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$id.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$id/uploadUpdateMetadata"`
+	# echo $resultat
 
 	cd $olddir
 	if [ -n "$pid" ]; then
