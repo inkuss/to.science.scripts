@@ -189,7 +189,11 @@ while read zeile; do
 	fi
 	printf "INFO: Creating a Webpage für Verzeichnis %s\n" $Verzeichnis
 	printf "INFO: Using Gatherconf %s\n" $Gatherconf
-	# createdBy gelangt nach RELS-EXT
+	# createdBy gelangt nach RELS-EXT:
+	#   bei Create.overrideNodeMembers kommt es vom ToScienceObject in den Node (nur createdBy, nicht die Struktur isDescribedBy).
+	#   von dort wird es beim Aufruf von FedoracFacade.updateNode => Utils.updateRelsExt nach RELS-EXT geschrieben.
+	#   in den Metadatenstrom (toscience oder Metadata2) wird es aber auf diese Weise nicht geschrieben.
+	#   Daher wird es auch nicht im Ansichts-Tab angezeigt.
 	createdBy="lav-nrw"
 	retcode=`./createWebpage.sh $curlopts "$Titel" "$URL" "$createdBy" "$Intervall" "$pid" "$crawlSubdomains" "$Gatherconf"`
 	echo $retcode
@@ -213,7 +217,8 @@ ENDE
 	# echo "curl $curlopts --form \"data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata\""
 	# resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata"`
 	# echo $resultat
-	# => im Datenstrom toscience ist es O.K., aber im Datenstrom metadata2 steht "ReserachData". Leider wird letzteres auch auf der UI angezeigt.
+	# => im Datenstrom toscience ist der Content-Typ (rdftype) O.K., aber im Datenstrom metadata2 steht "ReserachData". Leider wird letzteres auch auf der UI angezeigt.
+	# Die userId gelangt in den Datenstrom toscience (Struktur isDescribedBy -> createdBy) und wird im Ansichts-Tab als "Erstellt von" angezeigt. Für die Aufnahme in die Facetten ist aber die Übernahme von createdBy in den RELS-EXT-Datenstrom entscheidend (s.o.)
 
 	# mit diesem Endpoint erhalte ich nur "404":
 	# text_body="<$NAMESPACE:$pid> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/lobid/lv#ArchivedWebPage> .
