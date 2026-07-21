@@ -194,6 +194,7 @@ while read zeile; do
 	#   von dort wird es beim Aufruf von FedoracFacade.updateNode => Utils.updateRelsExt nach RELS-EXT geschrieben.
 	#   in den Metadatenstrom (toscience oder Metadata2) wird es aber auf diese Weise nicht geschrieben.
 	#   Daher wird es auch nicht im Ansichts-Tab angezeigt.
+	#   Für die Aufnahme in die Facetten ist aber die Übernahme von createdBy in den RELS-EXT-Datenstrom entscheidend.
 	createdBy="lav-nrw"
 	retcode=`./createWebpage.sh $curlopts "$Titel" "$URL" "$createdBy" "$Intervall" "$pid" "$crawlSubdomains" "$Gatherconf"`
 	echo $retcode
@@ -205,31 +206,32 @@ while read zeile; do
 	fi
 	printf "INFO: Eine Webpage zum Titel \"%s\", URL \"%s\", pid %s wurde angelegt.\n" "$Titel" $URL $NAMESPACE:$pid
 
-	# Jetzt noch einen PUT/PATCH auf die Webpage hinterher schicken, damit die Webpage auch wirklich eine Webpage wird:
+	# Jetzt noch einen PUT/PATCH auf die Webpage hinterher schicken, damit im Ansichts-Tab "Publikationstype: Archivierte Webseite" angezeigt wird.
 	# (PUT metadata)
-	#  Lade Metadaten im Format toscience.json zu dem Objekt hoch
-	# UserId für LAV holen / das ist der User namens "lav-nrw"
-	# die userId gelangt in den toscience-Datenstrom
-	userId=$(ermittleErsteUserIdVonKennzeichen "LAV")
-	cat > "$REGAL_TMP/$NAMESPACE:$pid.json" <<ENDE
-{"rdftype":[{"prefLabel":"Archivierte Webseite","@id":"http://purl.org/lobid/lv#ArchivedWebPage"}],"@id":"$NAMESPACE:$pid","id":"$BACKEND/resource/$NAMESPACE:$pid","title":["$Titel"],"isDescribedBy":{"createdBy":"$userId"}}
-ENDE
+
+	##  Lade Metadaten im Format toscience.json zu dem Objekt hoch  NEIN, das funktioniert noch nicht.
+	## UserId für LAV holen / das ist der User namens "lav-nrw"
+	## die userId gelangt in den toscience-Datenstrom
+	# userId=$(ermittleErsteUserIdVonKennzeichen "LAV")
+	# cat > "$REGAL_TMP/$NAMESPACE:$pid.json" <<ENDE
+#{"rdftype":[{"prefLabel":"Archivierte Webseite","@id":"http://purl.org/lobid/lv#ArchivedWebPage"}],"@id":"$NAMESPACE:$pid","id":"$BACKEND/resource/$NAMESPACE:$pid","title":["$Titel"],"isDescribedBy":{"createdBy":"$userId"}}
+#ENDE
 	# echo "curl $curlopts --form \"data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata\""
 	# resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$NAMESPACE:$pid.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$NAMESPACE:$pid/uploadUpdateMetadata"`
 	# echo $resultat
 	# => im Datenstrom toscience ist der Content-Typ (rdftype) O.K., aber im Datenstrom metadata2 steht "ReserachData". Leider wird letzteres auch auf der UI angezeigt.
-	# Die userId gelangt in den Datenstrom toscience (Struktur isDescribedBy -> createdBy) und wird im Ansichts-Tab als "Erstellt von" angezeigt. Für die Aufnahme in die Facetten ist aber die Übernahme von createdBy in den RELS-EXT-Datenstrom entscheidend (s.o.)
+	# Die userId gelangt in den Datenstrom toscience (Struktur isDescribedBy -> createdBy) und wird im Ansichts-Tab als "Erstellt von" angezeigt.
 
-	# mit diesem Endpoint erhalte ich nur "404":
+	# Dieser PUT funktioniert zwar und er wird auch genauso durchgeführt, wenn man die Webpage über das Frontend anlegt.
+	# Wir haben diesen PUT aber in die Methode Create.createWebpage eingebaut, damit man eine Webpage im Batch mit nur einem HTTP-Request anlegen kann.
 	# text_body="<$NAMESPACE:$pid> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/lobid/lv#ArchivedWebPage> .
-# <$NAMESPACE:$pid> <http://purl.org/dc/terms/title> "$Titel" .
-# "
-	# echo "curl $curlopts -XPUT -H \"Content-Type: text/plain; charset=utf-8; Accept: application/json\" --data-binary \"$text_body\" \"$BACKEND/resource/$NAMESPACE:$pid/metadata\""
-	# resultat=`curl $curlopts -XPUT -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: text/plain; charset=utf-8; Accept: application/json" --data-binary "$text_body" "$BACKEND/resource/$NAMESPACE:$pid/metadata"`
+# <$NAMESPACE:$pid> <http://purl.org/dc/terms/title> \"$Titel\" ."
+	# echo "curl $curlopts -XPUT -H \"Content-Type: text/plain; charset=utf-8; Accept: application/json\" --data-binary \"$text_body\" \"$BACKEND/resource/$NAMESPACE:$pid/metadata2\""; echo
+	# resultat=`curl $curlopts -XPUT -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: text/plain; charset=utf-8; Accept: application/json" --data-binary "$text_body" "$BACKEND/resource/$NAMESPACE:$pid/metadata2"`
 	# echo $resultat
 	echo
 
-	
+
 	# Jetzt die im angegebenem Verzeichnis mitgelieferten Archivdateien auswerten:
 	# -  Zeitstempel extrahieren
 	# -  Namen einer Archivdatei auswählen
@@ -327,16 +329,34 @@ ENDE
 	echo
 	printf "INFO: Ein Webschnitt zur pid %s, crawldir %s wurde mit PID %s angelegt.\n" $NAMESPACE:$pid $zeitstempel $id
 
-	# Jetzt noch einen PUT/PATCH auf die WebsiteVersion hinterher schicken, damit sie auch wirklich eine WebsiteVersion wird:
+	#   Es wird ein falscher Datenstrom toscienceJson angelegt (Title des Parent anstatt Label). 
+	#   Das geschieht in Create.createWebpageVersion => createRessource => updateResource => overrideNodeMembers => linkWithParent => inheritTitle => Modify.addMetadataField => updateLobididy2AndEnrichMetadata
+	#   => Behoben, in dem ich direkt danach, in Create.createWebpageVersion mit Modify().updateLobidify2AndEnrichMetadata mit "Label" patche (bei Create.createWebpage wird diese Methode auch aufgerufen, nur mit "Titel").
+
+	# Jetzt noch einen PUT/PATCH auf die WebsiteVersion hinterher schicken, damit sie auch in den Metadaten den rdftype "WebpageVersion" erhält.
 	# (PUT metadata)
 	#  Lade Metadaten im Format toscience.json zu dem Objekt hoch
-	#  ---> hier ist das rdf für Webschnitte noch unbekannt
+	#  ---> hier ist der rdf-Typ für Webschnitte noch unbekannt !
 	# cat > "$REGAL_TMP/$id.json" <<ENDE
-# {"rdftype":[{"prefLabel":"Archivierte Webseite","@id":"http://purl.org/lobid/lv#ArchivedWebPage"}],"@id":"$id","id":"$BACKEND/resource/$id","title":["$Titel"],"isDescribedBy":{"createdBy":"$userId"}}
+# {"rdftype":[{"prefLabel":"Archivierte Webseite ==> Webschnitt","@id":"http://purl.org/lobid/lv#ArchivedWebPage => WebpageVersion"}],"@id":"$id","id":"$BACKEND/resource/$id","title":["$Label"],"isDescribedBy":{"createdBy":"$userId"}}
 # ENDE
 	# echo "curl $curlopts --form \"data=@$REGAL_TMP/$id.json;type=application/json;charset=utf-8\" -XPUT \"$BACKEND/resource/$id/uploadUpdateMetadata\""
 	# resultat=`curl $curlopts -u$ADMIN_USER:$ADMIN_PASSWORD --form "data=@$REGAL_TMP/$id.json;type=application/json;charset=utf-8" -XPUT "$BACKEND/resource/$id/uploadUpdateMetadata"`
 	# echo $resultat
+	# => den Endpoint uploadUpdateMetadata noch nicht benutzen, solange Metadaten noch aus dem Datenstrom metadata2 zur Anzeige kommen.
+
+
+	# Wenn man den Endpoint /metadata2 benutzen wollte, müsste der Zeitstempel noch nach Label konvertieren werden.
+	# Label ist im Format YYYY-mm-dd HH:MM:SS, und von gleicher Zeitzone wie $zeitstempel (lokale Zeit):
+	# Label=...aus $zeitstempel...
+	# Wir machen den Patch aber nicht über einen zusätzlichen PUT an /metadata2, sondern direkt in createWebpageVersion -> updateLobdify2AndEnrichMetadata. 
+	# Da aber der rdf-Typ für Webschnitte noch undefiniert ist, patchen wir dort nur den Label (als Titel).
+	# text_body="<$id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/lobid/lv#ArchivedWebPage ==> WebpageVersion> .
+# <$id> <http://purl.org/dc/terms/title> \"$Label\" ."
+	# echo "curl $curlopts -XPUT -H \"Content-Type: text/plain; charset=utf-8; Accept: application/json\" --data-binary \"$text_body\" \"$BACKEND/resource/$id/metadata2\""; echo
+	# resultat=`curl $curlopts -XPUT -u$REGAL_ADMIN:$REGAL_PASSWORD -H "Content-Type: text/plain; charset=utf-8; Accept: application/json" --data-binary "$text_body" "$BACKEND/resource/$id/metadata2"`
+	# echo $resultat
+	# echo
 
 	cd $olddir
 	if [ -n "$pid" ]; then
